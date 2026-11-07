@@ -67,3 +67,24 @@ def test_bundle_rejects_duplicate_positions():
     row = StandingDTO(kind="driver", position=1, points=1, team=TeamRef(key="a", name="A"))
     with pytest.raises(ValueError):
         Bundle(year=2026, standings=[row, row])
+
+
+def test_event_detail_and_results_api(factory, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    import app.main as main
+    from app.adapters.jolpica_f1 import JolpicaF1
+    from app.refresh import refresh_all
+    from tests.conftest import make_transport
+    refresh_all(factory, [JolpicaF1(transport=make_transport(), pause=0)], 2026, force=True)
+    monkeypatch.setattr(main, "SessionLocal", factory)
+    tc = TestClient(main.app)
+    ev = tc.get("/api/events/f1/2026/1").json()
+    by_kind = {s["kind"]: s["results"] for s in ev["sessions"]}
+    assert by_kind["race"][0]["driver"] == "Ann Alpha" and by_kind["race"][1]["position"] is None
+    assert by_kind["qualifying"][0]["time"] == "1:19.5" and ev["live_timing_available"]
+    sprint = {s["kind"]: s["results"] for s in tc.get("/api/events/f1/2026/2").json()["sessions"]}["sprint"]
+    assert sprint[0]["points"] == 8
+    assert tc.get("/api/results/f1/2026").json()[0]["driver"] == "Ann Alpha"
+    assert tc.get("/api/drivers/f1/2026").json()[0]["team"] == "Team One"
+    assert tc.get("/api/events/f1/2026/99").status_code == 404
