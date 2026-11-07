@@ -1,6 +1,8 @@
 "use strict";
 /* Motorsport Hub — no-build SPA. Talks to the FastAPI backend under /api. */
-const API = window.MH_API || "";
+// Default: the app fetches data itself (data.js). Set window.MH_API = "https://host" to use the optional backend.
+const API = window.MH_API;
+const DIRECT = API === undefined;
 const app = document.getElementById("app");
 const SESSION_RU = { fp1: "Практика 1", fp2: "Практика 2", fp3: "Практика 3", qualifying: "Квалификация",
   sprint_qualifying: "Спринт-квалиф.", sprint: "Спринт", race: "Гонка" };
@@ -19,13 +21,14 @@ const lapTime = (s) => {
 const gap = (v, leader) => leader ? "Лидер" : v == null ? "—" : typeof v === "string" ? esc(v) : `+${v.toFixed(3)}`;
 
 async function api(path) {
+  if (DIRECT) return window.MHData.get(path);
   const r = await fetch(API + path);
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
   return r.json();
 }
 const skeleton = (n = 6) => `<div class="card">${'<div class="skeleton"></div>'.repeat(n)}</div>`;
 const errorBox = (e) => `<div class="card empty"><h2>Не удалось загрузить данные</h2><p>${esc(e.message)}</p>
-  <p class="muted">Убедитесь, что бэкенд запущен и выполнен <code>python -m app.cli refresh</code>.</p></div>`;
+  <p class="muted">${navigator.onLine ? "Источник данных не ответил. Попробуйте обновить позже." : "Нет подключения к интернету."}</p></div>`;
 
 let eventsCache = null;
 async function getEvents() {
@@ -188,7 +191,16 @@ async function livePage(params) {
     <div id="lv-drawer"></div></div>
     <div class="grid" style="align-content:start"><div class="card" id="lv-wx"><h2>Погода</h2><div class="muted">—</div></div>
     <div class="card"><h2>Дирекция гонки</h2><ul class="side-list" id="lv-rc"><li class="muted">—</li></ul></div>
-    <div class="card"><h2>Другая сессия</h2><select id="lv-sel"><option value="latest">Текущая / последняя</option></select></div></div></div>`;
+    <div class="card"><h2>Другая сессия</h2><select id="lv-sel"><option value="latest">Текущая / последняя</option></select></div>
+    ${DIRECT ? `<details class="card"><summary style="cursor:pointer;font-weight:600">Подписка OpenF1</summary>
+      <p class="muted" style="font-size:13px">Прошедшие сессии бесплатны. Для данных во время сессии вставьте токен доступа OpenF1 (хранится только на этом устройстве).</p>
+      <input id="lv-token" type="password" placeholder="access token" style="width:100%;background:var(--card-2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 12px">
+      <button id="lv-token-save" class="badge" style="margin-top:8px;border:0;cursor:pointer">Сохранить</button></details>` : ""}</div></div>`;
+  const tok = document.getElementById("lv-token");
+  if (tok) {
+    try { tok.value = localStorage.getItem("mh_openf1_token") || ""; } catch { /* storage blocked */ }
+    document.getElementById("lv-token-save").onclick = () => { try { localStorage.setItem("mh_openf1_token", tok.value.trim()); } catch { /* */ } route(); };
+  }
 
   // session picker (past sessions can be replayed)
   api(`/api/live/f1/sessions?year=${new Date().getFullYear()}`).then((list) => {
@@ -269,11 +281,14 @@ async function livePage(params) {
   // Server-Sent Events, falling back to polling if the stream breaks
   let pollId = null;
   const poll = async () => { try { render(await api(`/api/live/f1?session_key=${encodeURIComponent(key)}`)); } catch (e) { /* keep last */ } };
-  if ("EventSource" in window) {
+  if (!DIRECT && "EventSource" in window) {
     es = new EventSource(`${API}/api/live/f1/stream?session_key=${encodeURIComponent(key)}`);
     es.onmessage = (m) => { render(JSON.parse(m.data)); if (selected != null) loadLaps(); };
     es.onerror = () => { es.close(); es = null; if (!pollId) { poll(); pollId = setInterval(poll, 5000); } };
-  } else { poll(); pollId = setInterval(poll, 5000); }
+  } else {
+    const tick = async () => { await poll(); if (selected != null) loadLaps(); };
+    tick(); pollId = setInterval(tick, 4000);
+  }
   cleanup = () => { es && es.close(); pollId && clearInterval(pollId); };
 }
 
@@ -310,4 +325,6 @@ async function route() {
   } catch (e) { app.innerHTML = errorBox(e); }
 }
 window.addEventListener("hashchange", route);
+window.addEventListener("online", route);
 route();
+if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});

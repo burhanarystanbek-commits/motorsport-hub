@@ -2,12 +2,18 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0d12">
   <title>Motorsport Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Календарь, результаты, зачёт и живой тайминг Формулы 1">
 </head>
 <body>
   <header class="topbar">
@@ -18,12 +24,20 @@
       <a href="#/standings">Зачёт</a>
       <a href="#/live" class="nav-live"><span class="dot"></span>Live</a>
     </nav>
+    <button id="install" class="badge live" hidden style="border:0;cursor:pointer">Установить</button>
     <div class="series-pill" title="Пока доступна только Формула 1">F1</div>
   </header>
   <main id="app" class="container" aria-live="polite"></main>
   <footer class="footer container">
     Данные: Jolpica-F1 (календарь, результаты, зачёт) · OpenF1 (тайминг). Неофициальный проект, не связан с Formula 1.
   </footer>
-  <script src="/app.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // "Install app" button (Chrome/Edge/Android). iPhone: Share -> "To Home Screen".
+    let deferred; const btn = document.getElementById("install");
+    addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; btn.hidden = false; });
+    btn.onclick = async () => { btn.hidden = true; deferred && deferred.prompt(); deferred = null; };
+  </script>
 </body>
 </html>

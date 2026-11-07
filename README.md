@@ -25,8 +25,18 @@ curl localhost:8000/api/live/f1/laps/1                # every lap of car #1
 ```
 Endpoint list: `docs/ARCHITECTURE.md`. Interactive docs: `http://localhost:8000/docs`.
 
-## Frontend
-`frontend/` is a no-build single-page app (plain HTML/CSS/JS) served by the backend at `/`:
-home (next-race countdown, standings, last winner), calendar, standings, round results (race / sprint / qualifying)
-and live timing (timing tower over SSE, click a driver for every lap + lap-time chart, race control, weather, replay of past sessions).
-To host it separately, serve the folder anywhere and set `window.MH_API = "https://your-api"` before `app.js`.
+## App (phone + PC)
+`frontend/` is an installable app (PWA): it fetches data **directly from Jolpica-F1 and OpenF1 on the device**,
+no own server needed, keeps the last data for offline use and installs like a native app:
+- **Android / Chrome / Edge (Windows, macOS, Linux):** open the site -> "Установить" button (or browser menu -> Install app).
+- **iPhone / iPad:** Safari -> Share -> "На экран «Домой»".
+
+Hosting: GitHub Pages, deployed by `.github/workflows/pages.yml` on every push to `main`
+(one-time: repo Settings -> Pages -> Source: GitHub Actions). URL: `https://<user>.github.io/motorsport-hub/`.
+Local try-out: `python -m http.server -d frontend 8080` -> http://localhost:8080.
+
+Live timing during a session needs an OpenF1 access token (paste it on the Live page; stored only on the device).
+Past sessions are free.
+
+The Python backend is now optional (own database, scheduled refresh, shared cache for many users).
+To point the app at it, set `window.MH_API = "https://your-api"` before `app.js`; the backend also serves the app at `/`.

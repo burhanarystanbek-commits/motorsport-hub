@@ -14,6 +14,7 @@ import time
 from datetime import datetime, timezone
 
 import httpx
+from urllib.parse import quote
 
 from .. import config
 from ..adapters.base import SourceError
@@ -66,7 +67,9 @@ class OpenF1Client:
     def get(self, endpoint: str, params: dict | None = None) -> list[dict]:
         # OpenF1 filters like `date>X` are encoded in the key, so build the query manually.
         # keys ending in an operator ("date>") are written as `date>VALUE`, not `date>=VALUE`
-        query = "&".join(f"{k}{v}" if k[-1] in "<>" else f"{k}={v}" for k, v in (params or {}).items())
+        # values are percent-encoded: "+00:00" in a timestamp must not turn into a space
+        query = "&".join(f"{k}{quote(str(v), safe='')}" if k[-1] in "<>" else f"{k}={quote(str(v), safe='')}"
+                         for k, v in (params or {}).items())
         url = f"{self.base}/{endpoint}" + (f"?{query}" if query else "")
         for attempt in range(2):
             try:
