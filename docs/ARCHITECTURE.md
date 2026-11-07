@@ -11,4 +11,5 @@
 - **Scheduling**: refresh-if-stale on server start, plus `python -m app.cli refresh` for a daily cron/systemd timer.
 - **Model**: championships have a `rules` JSON, standings have `kind` and `class_name`, `Entry`/`EntryDriver` allow several drivers per car. Those endurance/GT parts are schema only until a WEC/IMSA/GT adapter uses them.
 - **Live timing** (`app/live/`): `OpenF1Client` -> `SessionFeed` (per session, fetches only rows newer than the last `date`, so polling stays cheap) -> pure `build_snapshot` (timing tower: position, gap to leader, interval, last/best lap, sectors with overall-best flags, speed trap, tyre compound + age, pit stops, track flag, race control, weather, fastest lap). `LiveTimingService` shares one upstream poll per `LIVE_POLL_SECONDS` across all clients, keeps the last good snapshot on error (`possibly_outdated`), stops polling finished sessions and keeps at most 4 sessions in memory. Live data is not stored in the DB.
-- **Not built**: frontend, news, favourites, search, notifications, PWA/offline, live timing for series other than F1.
+- **Frontend** (`frontend/`): no-build SPA (hash router, vanilla JS), served by FastAPI at `/`; live page uses SSE with polling fallback.
+- **Not built**: news, favourites, search, notifications, PWA/offline, live timing for series other than F1.

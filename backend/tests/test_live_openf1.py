@@ -163,3 +163,12 @@ def test_api_live_endpoints(monkeypatch):
     assert tc.get("/api/live/f1/laps/1").json()[0]["lap"] == 1
     assert tc.get("/api/live/f1/sessions?year=2026").json()[0]["session_key"] == 9999
     assert tc.get("/api/live/wec").status_code == 404
+
+
+def test_frontend_is_served():
+    from fastapi.testclient import TestClient
+
+    import app.main as main
+    tc = TestClient(main.app)
+    assert "Motorsport Hub" in tc.get("/").text
+    assert tc.get("/app.js").status_code == 200 and tc.get("/api/health").json() == {"ok": True}

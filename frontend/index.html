@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Motorsport Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand"><span class="brand-mark"></span>Motorsport<b>Hub</b></a>
+    <nav class="nav" id="nav">
+      <a href="#/">Главная</a>
+      <a href="#/calendar">Календарь</a>
+      <a href="#/standings">Зачёт</a>
+      <a href="#/live" class="nav-live"><span class="dot"></span>Live</a>
+    </nav>
+    <div class="series-pill" title="Пока доступна только Формула 1">F1</div>
+  </header>
+  <main id="app" class="container" aria-live="polite"></main>
+  <footer class="footer container">
+    Данные: Jolpica-F1 (календарь, результаты, зачёт) · OpenF1 (тайминг). Неофициальный проект, не связан с Formula 1.
+  </footer>
+  <script src="/app.js"></script>
+</body>
+</html>

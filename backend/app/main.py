@@ -1,6 +1,7 @@
 import asyncio
 import json
 import threading
+from pathlib import Path
 from contextlib import asynccontextmanager
 from datetime import timezone
 
@@ -8,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from . import config
@@ -242,3 +244,9 @@ async def live_stream(series: str, request: Request, session_key: str = "latest"
 
     return StreamingResponse(gen(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+# ---------------- frontend (static SPA, no build step) ----------------
+_FRONTEND = Path(__file__).resolve().parents[2] / "frontend"
+if _FRONTEND.is_dir():  # mounted last so /api/* routes win
+    app.mount("/", StaticFiles(directory=_FRONTEND, html=True), name="frontend")
