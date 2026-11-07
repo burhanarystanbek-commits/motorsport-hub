@@ -38,6 +38,21 @@ RESULTS = {"MRData": {"total": "2", "RaceTable": {"Races": [
          "Constructor": {"constructorId": "t2", "name": "Team Two", "nationality": "Italian"}}]}]}}}
 
 
+_D = DRIVERS["MRData"]["StandingsTable"]["StandingsLists"][0]["DriverStandings"]
+SPRINT = {"MRData": {"total": "1", "RaceTable": {"Races": [
+    {"season": "2026", "round": "2", "SprintResults": [
+        {"number": "1", "position": "1", "positionText": "1", "points": "8", "grid": "1", "laps": "19",
+         "status": "Finished", "Time": {"time": "30:00.000"}, "Driver": _D[0]["Driver"],
+         "Constructor": {"constructorId": "t1", "name": "Team One", "nationality": "British"}}]}]}}}
+
+QUALIFYING = {"MRData": {"total": "2", "RaceTable": {"Races": [
+    {"season": "2026", "round": "1", "QualifyingResults": [
+        {"number": "1", "position": "1", "Q1": "1:20.1", "Q2": "1:19.9", "Q3": "1:19.5", "Driver": _D[0]["Driver"],
+         "Constructor": {"constructorId": "t1", "name": "Team One", "nationality": "British"}},
+        {"number": "2", "position": "2", "Q1": "1:21.0", "Driver": _D[1]["Driver"],
+         "Constructor": {"constructorId": "t2", "name": "Team Two", "nationality": "Italian"}}]}]}}}
+
+
 def make_transport(fail: bool = False, empty_schedule: bool = False):
     def handler(req: httpx.Request):
         if fail:
@@ -49,6 +64,10 @@ def make_transport(fail: bool = False, empty_schedule: bool = False):
             return httpx.Response(200, json=CONSTRUCTORS)
         if p.endswith("/results.json"):
             return httpx.Response(200, json=RESULTS)
+        if p.endswith("/sprint.json"):
+            return httpx.Response(200, json=SPRINT)
+        if p.endswith("/qualifying.json"):
+            return httpx.Response(200, json=QUALIFYING)
         if empty_schedule:
             return httpx.Response(200, json={"MRData": {"RaceTable": {"Races": []}}})
         return httpx.Response(200, json=SCHEDULE)

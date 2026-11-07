@@ -100,17 +100,45 @@ class JolpicaF1:
         return rows, int(sl["round"])
 
     @staticmethod
-    def parse_results(mr: dict) -> list[ResultDTO]:
+    def parse_results(mr: dict, kind: str = "race") -> list[ResultDTO]:
+        if kind == "qualifying":
+            return JolpicaF1.parse_qualifying(mr)
+        key = "SprintResults" if kind == "sprint" else "Results"
         out = []
         for r in mr["RaceTable"]["Races"]:
-            for x in r.get("Results", []):
+            for x in r.get(key, []):
                 pos = int(x["position"]) if x.get("positionText", "").isdigit() else None
                 out.append(ResultDTO(
-                    event_key=f"{r['season']}-{r['round']}", session_kind="race", position=pos,
+                    event_key=f"{r['season']}-{r['round']}", session_kind=kind, position=pos,
                     status=x["status"], car_number=x.get("number"), grid=int(x["grid"]) if x.get("grid") else None,
                     laps=int(x["laps"]) if x.get("laps") else None,
                     time_text=(x.get("Time") or {}).get("time"), points=float(x["points"]),
                     driver=_driver(x["Driver"]), team=_team(x["Constructor"])))
+        return out
+
+    @staticmethod
+    def parse_qualifying(mr: dict) -> list[ResultDTO]:
+        out = []
+        for r in mr["RaceTable"]["Races"]:
+            for x in r.get("QualifyingResults", []):
+                best = x.get("Q3") or x.get("Q2") or x.get("Q1") or None
+                out.append(ResultDTO(
+                    event_key=f"{r['season']}-{r['round']}", session_kind="qualifying",
+                    position=int(x["position"]) if x.get("position") else None,
+                    status="Q3" if x.get("Q3") else "Q2" if x.get("Q2") else "Q1",
+                    car_number=x.get("number"), time_text=best,
+                    driver=_driver(x["Driver"]), team=_team(x["Constructor"])))
+        return out
+
+    def _paged(self, path: str, kind: str) -> list[ResultDTO]:
+        out, offset = [], 0
+        for _ in range(20):  # hard page cap
+            time.sleep(self.pause)
+            mr = self._get(path, limit=100, offset=offset)
+            out += self.parse_results(mr, kind)
+            offset += 100
+            if offset >= int(mr.get("total", 0)):
+                break
         return out
 
     # --- orchestration ---
@@ -118,13 +146,8 @@ class JolpicaF1:
         events = self.parse_schedule(self._get(f"{year}.json", limit=100))
         drivers, after = self.parse_standings(self._get(f"{year}/driverstandings.json"), "driver")
         constructors, _ = self.parse_standings(self._get(f"{year}/constructorstandings.json"), "constructor")
-        results, offset = [], 0
-        for _ in range(20):  # hard page cap
-            time.sleep(self.pause)
-            mr = self._get(f"{year}/results.json", limit=100, offset=offset)
-            results += self.parse_results(mr)
-            offset += 100
-            if offset >= int(mr["total"]):
-                break
+        results = (self._paged(f"{year}/results.json", "race")
+                   + self._paged(f"{year}/sprint.json", "sprint")
+                   + self._paged(f"{year}/qualifying.json", "qualifying"))
         return Bundle(year=year, events=events, standings=drivers + constructors,
                       standings_after_round=after, results=results)

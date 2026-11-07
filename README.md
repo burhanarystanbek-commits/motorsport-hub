@@ -1,6 +1,6 @@
 # Motorsport Hub (backend foundation)
 
-Early foundation for a multi-series motorsport hub. **Only F1 has an adapter, and it has not yet been run against the live service.** See `docs/DATA_SOURCES.md` for honest coverage.
+Backend for a multi-series motorsport hub. **Only F1 has adapters (Jolpica for calendar/results/standings, OpenF1 for live timing); neither has been run against the live service yet.** See `docs/DATA_SOURCES.md` for honest coverage.
 
 ## Run
 ```
@@ -14,4 +14,13 @@ uvicorn app.main:app --reload       # API on :8000
 Daily refresh: run `python -m app.cli refresh` from cron / a systemd timer.
 
 ## Environment variables
-`DATABASE_URL`, `STALE_AFTER_HOURS`, `SEASON`, `USER_AGENT` (see `.env.example`). No API secrets are required.
+`DATABASE_URL`, `STALE_AFTER_HOURS`, `SEASON`, `USER_AGENT`, `OPENF1_USERNAME`/`OPENF1_PASSWORD` (only for live data during a session), `LIVE_POLL_SECONDS`, `CORS_ORIGINS` (see `.env.example`).
+
+## Live timing (F1)
+```
+curl localhost:8000/api/live/f1                       # current / latest session
+curl localhost:8000/api/live/f1?session_key=9158      # replay a past session
+curl -N localhost:8000/api/live/f1/stream             # Server-Sent Events, pushed on change
+curl localhost:8000/api/live/f1/laps/1                # every lap of car #1
+```
+Endpoint list: `docs/ARCHITECTURE.md`. Interactive docs: `http://localhost:8000/docs`.
